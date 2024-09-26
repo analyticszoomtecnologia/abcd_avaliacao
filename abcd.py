@@ -37,7 +37,6 @@ def buscar_colaboradores():
     connection.close()
     return {row['nm_employee']: {'id': row['id_employee'], 'departament': row['nm_departament'], 'gestor': row['nm_gestor'], 'diretoria': row['nm_diretoria']} for row in colaboradores}
 
-
 # Função para buscar o id do gestor selecionado
 def buscar_id_gestor(nome_gestor):
     connection = conectar_banco()
@@ -155,8 +154,6 @@ def buscar_funcionarios_subordinados():
 
     return {}
 
-
-
 def abcd_page():
     # Verifica se o usuário está logado
     if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
@@ -182,12 +179,10 @@ def abcd_page():
             align-items: center;
             margin-bottom: 20px;
         }
-        
         </style>
         """,
         unsafe_allow_html=True
     )
-
 
     # Definindo as categorias, notas e suas pontuações com descrições para comportamental
     categorias_comportamental = ["Colaboração", "Inteligência Emocional", "Responsabilidade", "Iniciativa / Pró atividade", "Flexibilidade"]
@@ -255,14 +250,12 @@ def abcd_page():
         "D": "Descrição D para Conhecimento Técnico"
     }
 
-
     # Função para calcular a nota final
     def calcular_nota_final(selecoes_comportamental, selecao_tecnico):
         nota_comportamental = sum(pontuacoes_comportamental[nota] for nota in selecoes_comportamental if nota)
         nota_tecnico = pontuacoes_tecnico[selecao_tecnico] if selecao_tecnico else 0
         return nota_comportamental, nota_tecnico, nota_comportamental + nota_tecnico
 
-    # Função para determinar a nota com base na soma final
     def determinar_nota_final(soma_final):
         if soma_final <= 29:
             return "D"
@@ -275,7 +268,6 @@ def abcd_page():
         else:
             return "A"
 
-    # Função para atualizar o banco de dados
     def atualizar_banco_dados(id_emp, nome_colaborador, nome_gestor, setor, diretoria, data_resposta, nota_final, soma_final, notas_categorias):
         try:
             connection = conectar_banco()
@@ -305,14 +297,11 @@ def abcd_page():
         st.session_state['diretoria'] = ""
         st.session_state['data_resposta'] = datetime.today()
 
-    # Interface em Streamlit
     st.header("Preencha as informações abaixo:")
 
-    # Buscar colaboradores, departamentos e gestores
+    # Buscar colaboradores e subordinados
     colaboradores_data = buscar_colaboradores()
-
-    funcionarios = buscar_funcionarios_subordinados()
-
+    subordinados_data = buscar_funcionarios_subordinados()
 
     # Inputs de informações do colaborador
     cols_inputs = st.columns(2)
@@ -340,11 +329,11 @@ def abcd_page():
     with cols_date[0]:
         data_resposta = st.date_input("Data da Resposta", value=datetime.today(), format="DD-MM-YYYY")
 
-    # Verifica se o colaborador foi selecionado antes de habilitar a avaliação
-    if nome_colaborador:
+    # Verifica se o colaborador selecionado é subordinado do gestor logado
+    if nome_colaborador and id_emp in subordinados_data:
+        # Avaliação comportamental e técnica
         notas_categorias = {}
 
-        # Avaliação Comportamental
         st.subheader("Comportamental")
         for categoria in categorias_comportamental:
             st.subheader(categoria)
@@ -357,10 +346,6 @@ def abcd_page():
                         st.session_state[categoria] = nota
                         st.success(f"Selecionado: {nota} para {categoria}")
 
-            # Exibir o feedback de seleção
-            if selected_nota:
-                st.write(f"Selecionado para {categoria}: {selected_nota}")
-
             if categoria == "Colaboração":
                 notas_categorias["colaboracao"] = st.session_state.get(categoria)
             elif categoria == "Inteligência Emocional":
@@ -372,7 +357,6 @@ def abcd_page():
             elif categoria == "Flexibilidade":
                 notas_categorias["flexibilidade"] = st.session_state.get(categoria)
 
-        # Avaliação Técnica
         st.subheader("Conhecimento Técnico")
         cols = st.columns([5, 5, 5, 5, 5])
 
@@ -383,11 +367,9 @@ def abcd_page():
                     st.session_state[categoria_tecnica] = nota
                     st.success(f"Selecionado: {nota} para {categoria_tecnica}")
 
-        if selected_nota:
-            st.write(f"Selecionado para Conhecimento Técnico: {selected_nota}")
         notas_categorias["conhecimento_tecnico"] = st.session_state.get(categoria_tecnica)
 
-        # Botão para calcular a nota e salvar no banco de dados
+        # Botão para calcular e salvar no banco de dados
         if st.button("Calcular Nota e Salvar"):
             selecoes_comportamental = [st.session_state.get(categoria) for categoria in categorias_comportamental]
             selecao_tecnico = st.session_state.get(categoria_tecnica)
@@ -406,8 +388,9 @@ def abcd_page():
                 atualizar_banco_dados(id_emp, nome_colaborador, nome_gestor, setor, diretoria, data_resposta, nota_final, soma_final, notas_categorias)
                 limpar_campos()
 
-    else:
-        st.warning("Por favor, selecione um colaborador para habilitar as opções de avaliação.")
+    elif nome_colaborador:
+        st.error(f"O colaborador {nome_colaborador} não é subordinado ao gestor logado. Avaliação não permitida.")
+
 
     # Lista de IDs de supervisores permitidos
     if nome_gestor:
