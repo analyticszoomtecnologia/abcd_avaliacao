@@ -3,6 +3,7 @@ from databricks import sql
 from datetime import datetime
 from dotenv import load_dotenv
 import os
+import pandas as pd
 
 load_dotenv()
 DB_SERVER_HOSTNAME = os.getenv("DB_SERVER_HOSTNAME")
@@ -86,7 +87,40 @@ def verificar_se_foi_avaliado(id_emp):
     # Retorna a lista de avaliações com data, soma_final e nota
     return resultados if resultados else []
 
+def calcular_quarter(data):
+    mes = data.month
+    if mes <= 3:
+        return "Q1"
+    elif mes <= 6:
+        return "Q2"
+    elif mes <= 9:
+        return "Q3"
+    else:
+        return "Q4"
 
+def listar_avaliados(conn, quarter=None):
+    query = """
+    SELECT id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota, soma_final, 
+           colaboracao, inteligencia_emocional, responsabilidade, iniciativa_proatividade, flexibilidade, conhecimento_tecnico, data_resposta
+    FROM datalake.avaliacao_abcd.avaliacao_abcd
+    """
+    
+    cursor = conn.cursor()
+    cursor.execute(query)
+    resultados = cursor.fetchall()
+    colunas = [desc[0] for desc in cursor.description]
+    df = pd.DataFrame(resultados, columns=colunas)
+    
+    # Calculando o Quarter com base na data de resposta
+    df['data_resposta'] = pd.to_datetime(df['data_resposta'])
+    df['quarter'] = df['data_resposta'].apply(calcular_quarter)
+    
+    # Filtrando por Quarter se for especificado
+    if quarter and quarter != "Todos":
+        df = df[df['quarter'] == quarter]
+    
+    cursor.close()
+    return df
 
 def abcd_page():
     # Verifica se o usuário está logado
@@ -372,3 +406,26 @@ def abcd_page():
                 st.write("Todos os funcionários já foram avaliados.")
         else:
             st.write("Nenhum funcionário encontrado.")
+
+    # Função para listar avaliações já realizadas e incluir a coluna de Quarter
+    st.subheader("Avaliações Realizadas")
+
+    conn = conectar_banco()
+    if conn:
+        # Adicionando a seleção de Quarter
+        quarter_selecionado = st.selectbox("Selecione o Quarter", ["Todos", "Q1", "Q2", "Q3", "Q4"])
+
+        # Listando os avaliados, filtrando pelo Quarter se for selecionado
+        if quarter_selecionado == "Todos":
+            df = listar_avaliados(conn)
+        else:
+            df = listar_avaliados(conn, quarter=quarter_selecionado)
+        
+        if not df.empty:
+            st.dataframe(df)
+        else:
+            st.write("Nenhuma avaliação encontrada para o Quarter selecionado.")
+        
+        conn.close()
+    else:
+        st.error("Não foi possível conectar ao banco de dados.")
