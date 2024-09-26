@@ -30,9 +30,10 @@ def verificar_login(username, password):
     resultado = cursor.fetchone()
     cursor.close()
     connection.close()
-    return resultado is not None
+    
+    # Verifica se o login foi bem-sucedido e retorna o id_emp
+    return resultado['id_emp'] if resultado else None
 
-# Função para a página de login
 def login_page():
     if not st.session_state.get("logged_in", False):
         hide_pages(["Avaliação ABCD", "Funcionários Data", "Lista de Avaliados"])  # Oculta as páginas enquanto não logado
@@ -44,8 +45,10 @@ def login_page():
         login_button = st.button("Login")
 
         if login_button:
-            if verificar_login(username, password):
+            id_emp = verificar_login(username, password)
+            if id_emp:
                 st.session_state["logged_in"] = True  # Marca como logado
+                st.session_state["id_emp"] = id_emp  # Armazena o id_emp no session state
                 hide_pages([])  # Mostra todas as páginas após login
                 st.success("Login bem-sucedido! Você será redirecionado.")
                 sleep(0.5)
@@ -54,3 +57,4 @@ def login_page():
                 st.error("Usuário ou senha incorretos.")
     else:
         st.success("Você já está logado!")
+

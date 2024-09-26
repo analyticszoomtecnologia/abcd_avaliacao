@@ -70,7 +70,6 @@ def buscar_funcionarios_por_gestor(nome_gestor):
     return {row['id_employee']: row['nm_employee'] for row in funcionarios}
 
 # Função para verificar se o funcionário já foi avaliado
-# Função para verificar se o funcionário já foi avaliado
 def verificar_se_foi_avaliado(id_emp):
     connection = conectar_banco()
     cursor = connection.cursor()
@@ -121,6 +120,42 @@ def listar_avaliados(conn, quarter=None):
     
     cursor.close()
     return df
+
+def buscar_funcionarios_subordinados():
+    id_gestor = st.session_state.get('id_emp', None)
+
+    if id_gestor:
+        connection = conectar_banco()
+        cursor = connection.cursor()
+
+        # Busca o nome do gestor com base no id_emp logado
+        cursor.execute(f"""
+            SELECT Nome
+            FROM datalake.silver_pny.func_zoom
+            WHERE id = {id_gestor}
+        """)
+        resultado = cursor.fetchone()
+
+        if resultado:
+            nome_gestor = resultado['Nome']
+
+            # Agora busca os funcionários subordinados ao gestor logado
+            cursor.execute(f"""
+                SELECT id, Nome, Setor, Gestor_Direto
+                FROM datalake.silver_pny.func_zoom
+                WHERE Gestor_Direto = '{nome_gestor}'
+            """)
+            funcionarios = cursor.fetchall()
+
+            cursor.close()
+            connection.close()
+
+            # Retorna os funcionários como um dicionário
+            return {row['id']: row['Nome'] for row in funcionarios}
+
+    return {}
+
+
 
 def abcd_page():
     # Verifica se o usuário está logado
@@ -271,11 +306,13 @@ def abcd_page():
         st.session_state['data_resposta'] = datetime.today()
 
     # Interface em Streamlit
-    # Interface em Streamlit
     st.header("Preencha as informações abaixo:")
 
     # Buscar colaboradores, departamentos e gestores
     colaboradores_data = buscar_colaboradores()
+
+    funcionarios = buscar_funcionarios_subordinados()
+
 
     # Inputs de informações do colaborador
     cols_inputs = st.columns(2)
@@ -408,6 +445,49 @@ def abcd_page():
             st.write("Nenhum funcionário encontrado.")
 
     # Função para listar avaliações já realizadas e incluir a coluna de Quarter
+    def listar_avaliados_subordinados(conn, quarter=None):
+    # Obter o ID do gestor logado
+        id_gestor = st.session_state.get('id_emp', None)
+        
+        if not id_gestor:
+            st.error("Erro: ID do gestor não encontrado.")
+            return pd.DataFrame()  # Retorna um DataFrame vazio para evitar falhas
+
+        # Buscar os subordinados do gestor logado
+        subordinados = buscar_funcionarios_subordinados()
+
+        if not subordinados:
+            st.write("Nenhum subordinado encontrado.")
+            return pd.DataFrame()  # Retorna um DataFrame vazio
+
+        # Gerar uma lista de IDs dos subordinados
+        ids_subordinados = tuple(subordinados.keys())
+
+        query = f"""
+        SELECT id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota, soma_final, 
+            colaboracao, inteligencia_emocional, responsabilidade, iniciativa_proatividade, flexibilidade, conhecimento_tecnico, data_resposta
+        FROM datalake.avaliacao_abcd.avaliacao_abcd
+        WHERE id_emp IN {ids_subordinados}
+        """
+
+        cursor = conn.cursor()
+        cursor.execute(query)
+        resultados = cursor.fetchall()
+        colunas = [desc[0] for desc in cursor.description]
+        df = pd.DataFrame(resultados, columns=colunas)
+        
+        # Calculando o Quarter com base na data de resposta
+        df['data_resposta'] = pd.to_datetime(df['data_resposta'])
+        df['quarter'] = df['data_resposta'].apply(calcular_quarter)
+        
+        # Filtrando por Quarter se for especificado
+        if quarter and quarter != "Todos":
+            df = df[df['quarter'] == quarter]
+
+        cursor.close()
+        return df
+
+    # Seção da página que lista as avaliações realizadas
     st.subheader("Avaliações Realizadas")
 
     conn = conectar_banco()
@@ -417,15 +497,15 @@ def abcd_page():
 
         # Listando os avaliados, filtrando pelo Quarter se for selecionado
         if quarter_selecionado == "Todos":
-            df = listar_avaliados(conn)
+            df = listar_avaliados_subordinados(conn)
         else:
-            df = listar_avaliados(conn, quarter=quarter_selecionado)
-        
+            df = listar_avaliados_subordinados(conn, quarter=quarter_selecionado)
+
         if not df.empty:
             st.dataframe(df)
         else:
             st.write("Nenhuma avaliação encontrada para o Quarter selecionado.")
-        
+
         conn.close()
     else:
         st.error("Não foi possível conectar ao banco de dados.")
