@@ -394,11 +394,14 @@ def abcd_page():
 
     # Lista de IDs de supervisores permitidos
     if nome_gestor:
-        funcionarios = buscar_funcionarios_por_gestor(nome_gestor)
-        if funcionarios:
+        subordinados = buscar_funcionarios_subordinados()  # Busca os subordinados do gestor logado
+        
+        if subordinados:
             avaliados, nao_avaliados = [], []
-            for id_emp, nome_funcionario in funcionarios.items():
+            
+            for id_emp, nome_funcionario in subordinados.items():
                 avaliacoes = verificar_se_foi_avaliado(id_emp)
+                
                 if avaliacoes:
                     for avaliacao in avaliacoes:
                         data_resposta, soma_final, nota_final = avaliacao
@@ -406,6 +409,7 @@ def abcd_page():
                 else:
                     nao_avaliados.append(nome_funcionario)
 
+            # Mostrar funcionários avaliados
             st.write("#### Funcionários Avaliados")
             st.write("NF = Nota Final, CTO = Nota Conceito")
             if avaliados:
@@ -416,6 +420,7 @@ def abcd_page():
             else:
                 st.write("Nenhum funcionário avaliado encontrado.")
 
+            # Mostrar funcionários não avaliados
             st.write("#### Funcionários Não Avaliados")
             if nao_avaliados:
                 colunas_nao_avaliados = st.columns(3)  # Grid de 3 colunas
@@ -425,7 +430,7 @@ def abcd_page():
             else:
                 st.write("Todos os funcionários já foram avaliados.")
         else:
-            st.write("Nenhum funcionário encontrado.")
+            st.write("Nenhum subordinado encontrado.")
 
     # Função para listar avaliações já realizadas e incluir a coluna de Quarter
     def listar_avaliados_subordinados(conn, quarter=None):
