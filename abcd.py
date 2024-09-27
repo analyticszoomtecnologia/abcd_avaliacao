@@ -28,6 +28,7 @@ def buscar_colaboradores():
           Nome AS nm_employee,
           Setor AS nm_departament,
           Gestor_Direto AS nm_gestor,
+          Diretor_Gestor as nm_diretor,
           Diretoria AS nm_diretoria
         FROM
           datalake.silver_pny.func_zoom
@@ -35,7 +36,7 @@ def buscar_colaboradores():
     colaboradores = cursor.fetchall()
     cursor.close()
     connection.close()
-    return {row['nm_employee']: {'id': row['id_employee'], 'departament': row['nm_departament'], 'gestor': row['nm_gestor'], 'diretoria': row['nm_diretoria']} for row in colaboradores}
+    return {row['nm_employee']: {'id': row['id_employee'], 'departament': row['nm_departament'],'diretor': row['nm_diretor'], 'gestor': row['nm_gestor'], 'diretoria': row['nm_diretoria']} for row in colaboradores}
 
 # Função para buscar o id do gestor selecionado
 def buscar_id_gestor(nome_gestor):
@@ -120,6 +121,7 @@ def listar_avaliados(conn, quarter=None):
     cursor.close()
     return df
 
+# Função para buscar os subordinados do gestor ou diretor logado
 def buscar_funcionarios_subordinados():
     id_gestor = st.session_state.get('id_emp', None)
 
@@ -138,11 +140,11 @@ def buscar_funcionarios_subordinados():
         if resultado:
             nome_gestor = resultado['Nome']
 
-            # Agora busca os funcionários subordinados ao gestor logado
+            # Busca os funcionários subordinados diretos
             cursor.execute(f"""
                 SELECT id, Nome, Setor, Gestor_Direto
                 FROM datalake.silver_pny.func_zoom
-                WHERE Gestor_Direto = '{nome_gestor}'
+                WHERE Gestor_Direto = '{nome_gestor}' OR Diretor_Gestor = '{nome_gestor}'
             """)
             funcionarios = cursor.fetchall()
 
@@ -153,6 +155,49 @@ def buscar_funcionarios_subordinados():
             return {row['id']: row['Nome'] for row in funcionarios}
 
     return {}
+
+# Função para listar os subordinados avaliados
+def listar_avaliados_subordinados(conn, quarter=None):
+    id_gestor = st.session_state.get('id_emp', None)
+    
+    if not id_gestor:
+        st.error("Erro: ID do gestor não encontrado.")
+        return pd.DataFrame()  # Retorna um DataFrame vazio para evitar falhas
+
+    # Buscar os subordinados do gestor logado
+    subordinados = buscar_funcionarios_subordinados()
+
+    if not subordinados:
+        st.write("Nenhum subordinado encontrado.")
+        return pd.DataFrame()  # Retorna um DataFrame vazio
+
+    # Gerar uma lista de IDs dos subordinados
+    ids_subordinados = tuple(subordinados.keys())
+
+    query = f"""
+    SELECT id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota, soma_final, 
+        colaboracao, inteligencia_emocional, responsabilidade, iniciativa_proatividade, flexibilidade, conhecimento_tecnico, data_resposta
+    FROM datalake.avaliacao_abcd.avaliacao_abcd
+    WHERE id_emp IN {ids_subordinados}
+    """
+
+    cursor = conn.cursor()
+    cursor.execute(query)
+    resultados = cursor.fetchall()
+    colunas = [desc[0] for desc in cursor.description]
+    df = pd.DataFrame(resultados, columns=colunas)
+    
+    # Calculando o Quarter com base na data de resposta
+    df['data_resposta'] = pd.to_datetime(df['data_resposta'])
+    df['quarter'] = df['data_resposta'].apply(calcular_quarter)
+    
+    # Filtrando por Quarter se for especificado
+    if quarter and quarter != "Todos":
+        df = df[df['quarter'] == quarter]
+
+    cursor.close()
+    return df
+
 
 def abcd_page():
     # Verifica se o usuário está logado
@@ -314,7 +359,7 @@ def abcd_page():
             id_emp = None
 
     with cols_inputs[1]:
-        nome_gestor = st.text_input("Nome do Gestor", value=colaboradores_data[nome_colaborador]['gestor'] if nome_colaborador else "", disabled=True)
+        nome_gestor = st.text_input("Líder Direto", value=colaboradores_data[nome_colaborador]['gestor'] if nome_colaborador else "", disabled=True)
 
     cols_inputs2 = st.columns(2)
 
@@ -324,10 +369,15 @@ def abcd_page():
     with cols_inputs2[1]:
         diretoria = st.text_input("Diretoria", value=colaboradores_data[nome_colaborador]['diretoria'] if nome_colaborador else "", disabled=True)
 
+    # Adicionando o campo do Diretor para exibir na tela
+    with cols_inputs2[0]:
+        nome_diretor = st.text_input("Diretor Responsável", value=colaboradores_data[nome_colaborador]['diretor'] if nome_colaborador else "", disabled=True)
+
     cols_date = st.columns([1, 3])
 
     with cols_date[0]:
         data_resposta = st.date_input("Data da Resposta", value=datetime.today(), format="DD-MM-YYYY")
+    
 
     # Verifica se o colaborador selecionado é subordinado do gestor logado
     if nome_colaborador and id_emp in subordinados_data:
@@ -434,7 +484,6 @@ def abcd_page():
 
     # Função para listar avaliações já realizadas e incluir a coluna de Quarter
     def listar_avaliados_subordinados(conn, quarter=None):
-    # Obter o ID do gestor logado
         id_gestor = st.session_state.get('id_emp', None)
         
         if not id_gestor:
@@ -452,7 +501,7 @@ def abcd_page():
         ids_subordinados = tuple(subordinados.keys())
 
         query = f"""
-        SELECT id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota, soma_final, 
+        SELECT id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota as nota_final, 
             colaboracao, inteligencia_emocional, responsabilidade, iniciativa_proatividade, flexibilidade, conhecimento_tecnico, data_resposta
         FROM datalake.avaliacao_abcd.avaliacao_abcd
         WHERE id_emp IN {ids_subordinados}
