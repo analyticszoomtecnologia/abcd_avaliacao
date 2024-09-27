@@ -288,11 +288,11 @@ def abcd_page():
 
     # Simulação de descrições para a categoria técnica
     descricoes_tecnico = {
-        "A": "Descrição A para Conhecimento Técnico",
-        "B+": "Descrição B+ para Conhecimento Técnico",
-        "B": "Descrição B para Conhecimento Técnico",
-        "C": "Descrição C para Conhecimento Técnico",
-        "D": "Descrição D para Conhecimento Técnico"
+        "A": "Excelente",
+        "B+": "Muito Bom",
+        "B": "Bom",
+        "C": "Médio",
+        "D": "Ruim"
     }
 
     # Função para calcular a nota final
