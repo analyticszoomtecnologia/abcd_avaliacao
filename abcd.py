@@ -210,8 +210,7 @@ def abcd_page():
         st.error("Você precisa fazer login para acessar essa página.")
         return
     
-    cols = st.columns([9, 1])  # Ajuste o tamanho das colunas para colocar o botão à direita
-    with cols[1]:
+    with st.sidebar:
         if st.button("Sair"):
             logout()
 
