@@ -82,11 +82,11 @@ def buscar_funcionarios_subordinados():
         if resultado:
             nome_gestor = resultado['Nome']
 
-            # Agora busca os funcionários subordinados ao gestor logado
+            # Agora busca os funcionários subordinados ao gestor logado ou ao diretor responsável
             cursor.execute(f"""
                 SELECT id, Nome, Setor, Gestor_Direto
                 FROM datalake.silver_pny.func_zoom
-                WHERE Gestor_Direto = '{nome_gestor}'
+                WHERE Gestor_Direto = '{nome_gestor}' OR Diretor_Gestor = '{nome_gestor}'
             """)
             funcionarios = cursor.fetchall()
 
@@ -156,7 +156,7 @@ def func_data_nota():
                     nome_gestor = st.text_input("Novo Nome do Gestor", value=df_busca[df_busca['id_emp'] == id_selecionado]['nome_gestor'].values[0])
                     setor = st.text_input("Novo Setor", value=df_busca[df_busca['id_emp'] == id_selecionado]['setor'].values[0])
                     diretoria = st.text_input("Nova Diretoria", value=df_busca[df_busca['id_emp'] == id_selecionado]['diretoria'].values[0])
-                    nota = st.text_input("Nova Nota", value=df_busca[df_busca['id_emp'] == id_selecionado]['nota'].values[0])
+                    nota = st.text_input("Nova Nota", value=df_busca[df_busca['id_emp'] == id_selecionado]['nota_final'].values[0])
                     soma_final = st.text_input("Nova Soma Final", value=df_busca[df_busca['id_emp'] == id_selecionado]['soma_final'].values[0])
                     
                     # Adicionar as colunas novas
@@ -199,7 +199,7 @@ def func_data_nota():
 
 def buscar_por_nome(conn, nome):
     query = f"""
-    SELECT id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota, soma_final, 
+    SELECT id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota as nota_final, soma_final, 
            colaboracao, inteligencia_emocional, responsabilidade, iniciativa_proatividade, flexibilidade, conhecimento_tecnico
     FROM datalake.avaliacao_abcd.avaliacao_abcd 
     WHERE LOWER(nome_colaborador) LIKE LOWER('%{nome}%')
@@ -211,6 +211,7 @@ def buscar_por_nome(conn, nome):
     df = pd.DataFrame(resultados, columns=colunas)
     cursor.close()
     return df
+
 
 def atualizar_avaliado(conn, id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota, soma_final, colaboracao, inteligencia_emocional, responsabilidade, iniciativa_proatividade, flexibilidade, conhecimento_tecnico):
     query = f"""
