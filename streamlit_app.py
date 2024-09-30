@@ -38,7 +38,7 @@ else:
     if pagina_selecionada == "Avaliação ABCD":
         abcd_page()
     elif pagina_selecionada == "Funcionários Data":
-        if st.session_state.get('username') == 'grasiele.gof':  # Verificação extra por segurança
+        if st.session_state.get('username') == 'grasiele.bof':  # Verificação extra por segurança
             func_data_page()
     elif pagina_selecionada == "Lista de Avaliados":
         func_data_nota()
