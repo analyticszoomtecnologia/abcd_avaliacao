@@ -19,15 +19,26 @@ else:
 
     # Seletor de páginas na barra lateral
     st.sidebar.title("Navegação")
-    pagina_selecionada = st.sidebar.selectbox(
-        "Escolha a página",
-        ["Avaliação ABCD", "Funcionários Data", "Lista de Avaliados"]
-    )
+    
+    # Verifica se o usuário logado é 'grasiele.gof'
+    if st.session_state.get('username') == 'grasiele.gof':
+        # Usuário 'grasiele.gof' pode ver todas as páginas
+        pagina_selecionada = st.sidebar.selectbox(
+            "Escolha a página",
+            ["Avaliação ABCD", "Funcionários Data", "Lista de Avaliados"]
+        )
+    else:
+        # Outros usuários não podem ver a página "Funcionários Data"
+        pagina_selecionada = st.sidebar.selectbox(
+            "Escolha a página",
+            ["Avaliação ABCD", "Lista de Avaliados"]
+        )
 
     # Navega para a página selecionada
     if pagina_selecionada == "Avaliação ABCD":
         abcd_page()
     elif pagina_selecionada == "Funcionários Data":
-        func_data_page()
+        if st.session_state.get('username') == 'grasiele.gof':  # Verificação extra por segurança
+            func_data_page()
     elif pagina_selecionada == "Lista de Avaliados":
         func_data_nota()
