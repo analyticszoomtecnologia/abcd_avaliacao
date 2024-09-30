@@ -82,7 +82,7 @@ def listar_avaliados_subordinados(conn, quarter=None):
     ids_subordinados = tuple(subordinados.keys())
 
     query = f"""
-    SELECT id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota, soma_final, 
+    SELECT id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota as nota_final, 
            colaboracao, inteligencia_emocional, responsabilidade, iniciativa_proatividade, flexibilidade, conhecimento_tecnico, data_resposta
     FROM datalake.avaliacao_abcd.avaliacao_abcd
     WHERE id_emp IN {ids_subordinados}
