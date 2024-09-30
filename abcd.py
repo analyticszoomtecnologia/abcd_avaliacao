@@ -1,6 +1,6 @@
 import streamlit as st
 from databricks import sql
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
 import pandas as pd
@@ -101,7 +101,7 @@ def calcular_quarter(data):
 def listar_avaliados(conn, quarter=None):
     query = """
     SELECT id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota, soma_final, 
-           colaboracao, inteligencia_emocional, responsabilidade, iniciativa_proatividade, flexibilidade, conhecimento_tecnico, data_resposta
+           colaboracao, inteligencia_emocional, responsabilidade, iniciativa_proatividade, flexibilidade, conhecimento_tecnico, data_resposta, data_resposta_quarter
     FROM datalake.avaliacao_abcd.avaliacao_abcd
     """
     
@@ -189,8 +189,8 @@ def listar_avaliados_subordinados(conn, quarter=None):
     df = pd.DataFrame(resultados, columns=colunas)
     
     # Calculando o Quarter com base na data de resposta
-    df['data_resposta'] = pd.to_datetime(df['data_resposta'])
-    df['quarter'] = df['data_resposta'].apply(calcular_quarter)
+    df['data_resposta_quarter'] = pd.to_datetime(df['data_resposta_quarter'])
+    df['quarter'] = df['data_resposta_quarter'].apply(calcular_quarter)
     
     # Filtrando por Quarter se for especificado
     if quarter and quarter != "Todos":
@@ -318,13 +318,18 @@ def abcd_page():
         try:
             connection = conectar_banco()
             cursor = connection.cursor()
+
+            # Calcula a data_resposta_quarter (10 dias antes)
+            data_resposta_quarter = data_resposta - timedelta(days=10)
+
+            # Insere a avaliação com a data ajustada e a data original
             cursor.execute(f"""
                 INSERT INTO datalake.avaliacao_abcd.avaliacao_abcd (
-                    id_emp, nome_colaborador, nome_gestor, setor, diretoria, data_resposta, nota, soma_final,
+                    id_emp, nome_colaborador, nome_gestor, setor, diretoria, data_resposta, data_resposta_quarter, nota, soma_final,
                     colaboracao, inteligencia_emocional, responsabilidade, iniciativa_proatividade, flexibilidade, conhecimento_tecnico
                 )
                 VALUES (
-                    '{id_emp}', '{nome_colaborador}', '{nome_gestor}', '{setor}', '{diretoria}', '{data_resposta}', '{nota_final}', '{soma_final}',
+                    '{id_emp}', '{nome_colaborador}', '{nome_gestor}', '{setor}', '{diretoria}', '{data_resposta}', '{data_resposta_quarter}', '{nota_final}', '{soma_final}',
                     '{notas_categorias["colaboracao"]}', '{notas_categorias["inteligencia_emocional"]}', '{notas_categorias["responsabilidade"]}',
                     '{notas_categorias["iniciativa_proatividade"]}', '{notas_categorias["flexibilidade"]}', '{notas_categorias["conhecimento_tecnico"]}'
                 )
@@ -503,7 +508,7 @@ def abcd_page():
 
         query = f"""
         SELECT id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota as nota_final, 
-            colaboracao, inteligencia_emocional, responsabilidade, iniciativa_proatividade, flexibilidade, conhecimento_tecnico, data_resposta
+            colaboracao, inteligencia_emocional, responsabilidade, iniciativa_proatividade, flexibilidade, conhecimento_tecnico, data_resposta, data_resposta_quarter
         FROM datalake.avaliacao_abcd.avaliacao_abcd
         WHERE id_emp IN {ids_subordinados}
         """
@@ -515,8 +520,8 @@ def abcd_page():
         df = pd.DataFrame(resultados, columns=colunas)
         
         # Calculando o Quarter com base na data de resposta
-        df['data_resposta'] = pd.to_datetime(df['data_resposta'])
-        df['quarter'] = df['data_resposta'].apply(calcular_quarter)
+        df['data_resposta_quarter'] = pd.to_datetime(df['data_resposta_quarter'])
+        df['quarter'] = df['data_resposta_quarter'].apply(calcular_quarter)
         
         # Filtrando por Quarter se for especificado
         if quarter and quarter != "Todos":
