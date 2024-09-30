@@ -39,9 +39,9 @@ def buscar_colaboradores():
     return {row['nm_employee']: {'id': row['id_employee'], 'departament': row['nm_departament'],'diretor': row['nm_diretor'], 'gestor': row['nm_gestor'], 'diretoria': row['nm_diretoria']} for row in colaboradores}
 
 def logout():
-    st.session_state['logged_in'] = False
-    st.session_state['id_emp'] = None
-    st.experimental_rerun()
+    st.session_state.clear()  # Limpa todo o session_state
+    st.success("Você saiu com sucesso!")
+    st.stop()
 
 # Função para buscar o id do gestor selecionado
 def buscar_id_gestor(nome_gestor):
