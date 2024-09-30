@@ -38,12 +38,6 @@ def buscar_colaboradores():
     connection.close()
     return {row['nm_employee']: {'id': row['id_employee'], 'departament': row['nm_departament'],'diretor': row['nm_diretor'], 'gestor': row['nm_gestor'], 'diretoria': row['nm_diretoria']} for row in colaboradores}
 
-def botao_sair():
-    st.sidebar.title("Logout")
-    if st.sidebar.button("Sair"):
-        # Limpa as variáveis de sessão associadas ao login
-        st.session_state.clear()
-        st.experimental_rerun()
 
 # Função para buscar o id do gestor selecionado
 def buscar_id_gestor(nome_gestor):
@@ -235,8 +229,6 @@ def abcd_page():
         """,
         unsafe_allow_html=True
     )
-
-    botao_sair()
 
     # Definindo as categorias, notas e suas pontuações com descrições para comportamental
     categorias_comportamental = ["Colaboração", "Inteligência Emocional", "Responsabilidade", "Iniciativa / Pró atividade", "Flexibilidade"]
