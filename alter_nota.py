@@ -23,7 +23,6 @@ def conectar_banco():
         st.error(f"Erro ao conectar ao banco de dados: {e}")
         return None
 
-# Função para calcular o Quarter com base na data de resposta
 def calcular_quarter(data):
     mes = data.month
     if mes <= 3:
@@ -35,28 +34,74 @@ def calcular_quarter(data):
     else:
         return "Q4"
 
-# Função para listar avaliados e incluir a coluna de Quarter
-def listar_avaliados(conn, quarter=None):
-    query = """
+# Função para buscar os subordinados do gestor ou diretor logado
+def buscar_funcionarios_subordinados():
+    id_gestor = st.session_state.get('id_emp', None)
+
+    if id_gestor:
+        connection = conectar_banco()
+        cursor = connection.cursor()
+
+        # Busca o nome do gestor com base no id_emp logado
+        cursor.execute(f"""
+            SELECT Nome
+            FROM datalake.silver_pny.func_zoom
+            WHERE id = {id_gestor}
+        """)
+        resultado = cursor.fetchone()
+
+        if resultado:
+            nome_gestor = resultado['Nome']
+
+            # Busca os funcionários subordinados diretos
+            cursor.execute(f"""
+                SELECT id, Nome
+                FROM datalake.silver_pny.func_zoom
+                WHERE Gestor_Direto = '{nome_gestor}' OR Diretor_Gestor = '{nome_gestor}'
+            """)
+            funcionarios = cursor.fetchall()
+
+            cursor.close()
+            connection.close()
+
+            # Retorna os funcionários como um dicionário
+            return {row['id']: row['Nome'] for row in funcionarios}
+
+    return {}
+
+# Função para listar subordinados avaliados
+def listar_avaliados_subordinados(conn, quarter=None):
+    # Verifica se o gestor logado tem subordinados
+    subordinados = buscar_funcionarios_subordinados()
+
+    if not subordinados:
+        st.write("Nenhum subordinado encontrado.")
+        return pd.DataFrame()  # Retorna um DataFrame vazio
+
+    # Gerar uma lista de IDs dos subordinados
+    ids_subordinados = tuple(subordinados.keys())
+
+    query = f"""
     SELECT id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota, soma_final, 
            colaboracao, inteligencia_emocional, responsabilidade, iniciativa_proatividade, flexibilidade, conhecimento_tecnico, data_resposta
     FROM datalake.avaliacao_abcd.avaliacao_abcd
+    WHERE id_emp IN {ids_subordinados}
     """
-    
+
     cursor = conn.cursor()
     cursor.execute(query)
     resultados = cursor.fetchall()
     colunas = [desc[0] for desc in cursor.description]
     df = pd.DataFrame(resultados, columns=colunas)
-    
+
     # Calculando o Quarter com base na data de resposta
     df['data_resposta'] = pd.to_datetime(df['data_resposta'])
     df['quarter'] = df['data_resposta'].apply(calcular_quarter)
-    
+
     # Filtrando por Quarter se for especificado
-    if quarter:
+    if quarter and quarter != "Todos":
         df = df[df['quarter'] == quarter]
-    
+
     cursor.close()
     return df
 
@@ -75,31 +120,41 @@ def func_data_nota():
     if conn:
         if opcao == "Listar":
             st.subheader("Lista de Avaliados")
-            
+
             # Adicionando a seleção de Quarter
             quarter_selecionado = st.selectbox("Selecione o Quarter", ["Todos", "Q1", "Q2", "Q3", "Q4"])
-            
+
             # Filtrando os avaliados pelo Quarter
             if quarter_selecionado == "Todos":
-                df = listar_avaliados(conn)
+                df = listar_avaliados_subordinados(conn)
             else:
-                df = listar_avaliados(conn, quarter=quarter_selecionado)
-            
-            st.dataframe(df)
+                df = listar_avaliados_subordinados(conn, quarter=quarter_selecionado)
+
+            if not df.empty:
+                st.dataframe(df)
+            else:
+                st.write("Nenhuma avaliação encontrada para o Quarter selecionado.")
 
         elif opcao == "Deletar":
             st.subheader("Deletar Nota Avaliada")
 
+            subordinados = buscar_funcionarios_subordinados()
+
+            if not subordinados:
+                st.warning("Nenhum subordinado encontrado.")
+                return
+
             nome_busca = st.text_input("Digite o nome para buscar")
-            
+
             if nome_busca:
-                df_busca = buscar_por_nome(conn, nome_busca)
+                df_busca = buscar_por_nome(conn, nome_busca, subordinados)
+
                 if df_busca.empty:
                     st.warning(f"Nenhum funcionário encontrado com o nome: {nome_busca}")
                 else:
                     st.dataframe(df_busca)
                     id_selecionado = st.selectbox("Selecione o Avaliado para Deletar", options=df_busca['id_emp'], format_func=lambda x: f"ID {x}: {df_busca[df_busca['id_emp'] == x]['nome_colaborador'].values[0]}")
-                    
+
                     if st.button("Deletar"):
                         deletar_avaliado(conn, id_selecionado)
 
@@ -110,37 +165,13 @@ def func_data_nota():
 
 # Funções CRUD que serão usadas na página
 
-def listar_avaliados(conn, quarter=None):
-    query = """
-    SELECT id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota, soma_final, 
-           colaboracao, inteligencia_emocional, responsabilidade, iniciativa_proatividade, flexibilidade, conhecimento_tecnico, data_resposta
-    FROM datalake.avaliacao_abcd.avaliacao_abcd
-    """
-    
-    cursor = conn.cursor()
-    cursor.execute(query)
-    resultados = cursor.fetchall()
-    colunas = [desc[0] for desc in cursor.description]
-    df = pd.DataFrame(resultados, columns=colunas)
-    
-    # Calculando o Quarter com base na data de resposta
-    df['data_resposta'] = pd.to_datetime(df['data_resposta'])
-    df['quarter'] = df['data_resposta'].apply(calcular_quarter)
-    
-    # Filtrando por Quarter se for especificado
-    if quarter and quarter != "Todos":
-        df = df[df['quarter'] == quarter]
-    
-    cursor.close()
-    return df
-
-
-def buscar_por_nome(conn, nome):
+def buscar_por_nome(conn, nome, subordinados):
+    ids_subordinados = tuple(subordinados.keys())
     query = f"""
     SELECT id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota, soma_final, 
            colaboracao, inteligencia_emocional, responsabilidade, iniciativa_proatividade, flexibilidade, conhecimento_tecnico
     FROM datalake.avaliacao_abcd.avaliacao_abcd 
-    WHERE LOWER(nome_colaborador) LIKE LOWER('%{nome}%')
+    WHERE LOWER(nome_colaborador) LIKE LOWER('%{nome}%') AND id_emp IN {ids_subordinados}
     """
     cursor = conn.cursor()
     cursor.execute(query)
