@@ -38,6 +38,10 @@ def buscar_colaboradores():
     connection.close()
     return {row['nm_employee']: {'id': row['id_employee'], 'departament': row['nm_departament'],'diretor': row['nm_diretor'], 'gestor': row['nm_gestor'], 'diretoria': row['nm_diretoria']} for row in colaboradores}
 
+def logout():
+    st.session_state['logged_in'] = False
+    st.session_state['id_emp'] = None
+    st.experimental_rerun()
 
 # Função para buscar o id do gestor selecionado
 def buscar_id_gestor(nome_gestor):
@@ -205,6 +209,11 @@ def abcd_page():
     if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
         st.error("Você precisa fazer login para acessar essa página.")
         return
+    
+    cols = st.columns([9, 1])  # Ajuste o tamanho das colunas para colocar o botão à direita
+    with cols[1]:
+        if st.button("Sair"):
+            logout()
 
     st.title("Avaliação ABCD")
     # Aplicando CSS para aumentar a largura da página e expandir elementos
