@@ -38,39 +38,46 @@ def calcular_quarter(data):
 # Função para buscar os subordinados do gestor logado
 def buscar_funcionarios_subordinados():
     id_gestor = st.session_state.get('id_emp', None)
+    if not id_gestor:
+        st.error("Erro: ID do gestor não encontrado na sessão.")
+        return {}
 
-    if id_gestor:
-        connection = conectar_banco()
-        cursor = connection.cursor()
+    connection = conectar_banco()
+    cursor = connection.cursor()
 
-        # Busca o nome do gestor com base no id_emp logado
+    # Busca o nome do gestor com base no id_emp logado
+    cursor.execute(f"""
+        SELECT Nome
+        FROM datalake.silver_pny.func_zoom
+        WHERE id = {id_gestor}
+    """)
+    resultado = cursor.fetchone()
+
+    if resultado:
+        nome_gestor = resultado['Nome']
+
+        # Busca os funcionários subordinados diretos ou que estão sob o diretor logado
         cursor.execute(f"""
-            SELECT Nome
+            SELECT id, Nome
             FROM datalake.silver_pny.func_zoom
-            WHERE id = {id_gestor}
+            WHERE Gestor_Direto = '{nome_gestor}' OR Diretor_Gestor = '{nome_gestor}'
         """)
-        resultado = cursor.fetchone()
+        funcionarios = cursor.fetchall()
 
-        if resultado:
-            nome_gestor = resultado['Nome']
+        cursor.close()
+        connection.close()
 
-            # Busca os funcionários subordinados diretos ou que estão sob o diretor logado
-            cursor.execute(f"""
-                SELECT id, Nome, Setor, Gestor_Direto
-                FROM datalake.silver_pny.func_zoom
-                WHERE Gestor_Direto = '{nome_gestor}' OR Diretor_Gestor = '{nome_gestor}'
-            """)
-            funcionarios = cursor.fetchall()
-
-            cursor.close()
-            connection.close()
-
-            # Retorna os funcionários como um dicionário
+        # Retorna os funcionários como um dicionário
+        if funcionarios:
             return {row['id']: row['Nome'] for row in funcionarios}
+        else:
+            st.warning("Nenhum subordinado encontrado.")
+            return {}
 
+    st.error("Erro ao buscar o nome do gestor logado.")
     return {}
 
-# Função para listar avaliados e incluir a coluna de Quarter, com filtragem por subordinados
+# Função para listar avaliados com a filtragem por subordinados e Quarter
 def listar_avaliados(conn, quarter=None, subordinados_ids=None):
     query = """
     SELECT id_emp, nome_colaborador, nome_gestor, setor, diretoria, nota, soma_final, 
@@ -93,7 +100,7 @@ def listar_avaliados(conn, quarter=None, subordinados_ids=None):
     df['quarter'] = df['data_resposta'].apply(calcular_quarter)
     
     # Filtrando por Quarter se for especificado
-    if quarter:
+    if quarter and quarter != "Todos":
         df = df[df['quarter'] == quarter]
     
     cursor.close()
@@ -129,7 +136,10 @@ def func_data_nota():
             else:
                 df = listar_avaliados(conn, quarter=quarter_selecionado, subordinados_ids=subordinados_ids)
             
-            st.dataframe(df)
+            if not df.empty:
+                st.dataframe(df)
+            else:
+                st.write("Nenhum funcionário encontrado para as condições especificadas.")
 
         elif opcao == "Atualizar":
             st.subheader("Atualizar Dados de Avaliado")
@@ -141,12 +151,11 @@ def func_data_nota():
                 # Filtrando pelos subordinados do gestor logado
                 df_busca = df_busca[df_busca['id_emp'].isin(subordinados_ids)]
                 
-                if df_busca.empty:
+                if df_busca.empty():
                     st.warning(f"Nenhum funcionário encontrado com o nome: {nome_busca} ou ele não é seu subordinado.")
                 else:
                     st.dataframe(df_busca)
-                    funcionarios_opcoes = df_busca.apply(lambda row: f"ID {row['id_emp']}: {row['nome_colaborador']}", axis=1).tolist()
-                    id_selecionado = st.selectbox("Selecione o Avaliado para Atualizar", options=df_busca['id_emp'], format_func=lambda x: f"ID {x}: {df_busca[df_busca['id_emp'] == x]['nome_colaborador'].values[0]}")
+                    id_selecionado = st.selectbox("Selecione o Avaliado para Atualizar", options=df_busca['id_emp'])
                     
                     # Exibir as colunas para atualização
                     nome_colaborador = st.text_input("Novo Nome do Colaborador", value=df_busca[df_busca['id_emp'] == id_selecionado]['nome_colaborador'].values[0])
@@ -181,7 +190,7 @@ def func_data_nota():
                     st.warning(f"Nenhum funcionário encontrado com o nome: {nome_busca} ou ele não é seu subordinado.")
                 else:
                     st.dataframe(df_busca)
-                    id_selecionado = st.selectbox("Selecione o Avaliado para Deletar", options=df_busca['id_emp'], format_func=lambda x: f"ID {x}: {df_busca[df_busca['id_emp'] == x]['nome_colaborador'].values[0]}")
+                    id_selecionado = st.selectbox("Selecione o Avaliado para Deletar", options=df_busca['id_emp'])
                     
                     if st.button("Deletar"):
                         deletar_avaliado(conn, id_selecionado)
