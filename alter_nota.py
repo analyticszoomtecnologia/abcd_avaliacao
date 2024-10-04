@@ -95,8 +95,8 @@ def listar_avaliados_subordinados(conn, quarter=None):
     df = pd.DataFrame(resultados, columns=colunas)
 
     # Calculando o Quarter com base na data de resposta
-    df['data_resposta'] = pd.to_datetime(df['data_resposta'])
-    df['quarter'] = df['data_resposta'].apply(calcular_quarter)
+    df['data_resposta_quarter'] = pd.to_datetime(df['data_resposta_quarter'])
+    df['quarter'] = df['data_resposta_quarter'].apply(calcular_quarter)
 
     # Filtrando por Quarter se for especificado
     if quarter and quarter != "Todos":
