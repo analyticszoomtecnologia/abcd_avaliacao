@@ -63,17 +63,22 @@ def func_data_page():
                     st.warning(f"Nenhum funcionário encontrado com o nome: {nome_busca}")
                 else:
                     st.dataframe(df_busca)
-                    funcionarios_opcoes = df_busca.apply(lambda row: f"ID {row['id']}: {row['Nome']}", axis=1).tolist()
-                    id_selecionado = st.selectbox("Selecione o Funcionário para Atualizar", options=df_busca['id'], format_func=lambda x: f"ID {x}: {df_busca[df_busca['id'] == x]['Nome'].values[0]}")
+                    if 'id' in df_busca.columns:  # Verifica se 'id' está presente
+                        id_selecionado = st.selectbox(
+                            "Selecione o Funcionário para Atualizar", 
+                            options=df_busca['id'], 
+                            format_func=lambda x: f"ID {x}: {df_busca[df_busca['id'] == x]['Nome'].values[0]}" if not df_busca[df_busca['id'] == x].empty else "Funcionário Desconhecido"
+                        )
                     
-                    nome = st.text_input("Novo Nome", value=df_busca[df_busca['id'] == id_selecionado]['Nome'].values[0])
-                    setor = st.text_input("Novo Setor", value=df_busca[df_busca['id'] == id_selecionado]['Setor'].values[0])
-                    gestor_direto = st.text_input("Novo Gestor Direto", value=df_busca[df_busca['id'] == id_selecionado]['Gestor_Direto'].values[0])
-                    diretor_gestor = st.text_input("Novo Diretor Gestor", value=df_busca[df_busca['id'] == id_selecionado]['Diretor_Gestor'].values[0])
-                    diretoria = st.text_input("Nova Diretoria", value=df_busca[df_busca['id'] == id_selecionado]['Diretoria'].values[0])
+                        if not df_busca[df_busca['id'] == id_selecionado].empty:  # Verifica se o funcionário existe
+                            nome = st.text_input("Novo Nome", value=df_busca[df_busca['id'] == id_selecionado]['Nome'].values[0])
+                            setor = st.text_input("Novo Setor", value=df_busca[df_busca['id'] == id_selecionado]['Setor'].values[0])
+                            gestor_direto = st.text_input("Novo Gestor Direto", value=df_busca[df_busca['id'] == id_selecionado]['Gestor_Direto'].values[0])
+                            diretor_gestor = st.text_input("Novo Diretor Gestor", value=df_busca[df_busca['id'] == id_selecionado]['Diretor_Gestor'].values[0])
+                            diretoria = st.text_input("Nova Diretoria", value=df_busca[df_busca['id'] == id_selecionado]['Diretoria'].values[0])
 
-                    if st.button("Atualizar"):
-                        atualizar_pessoa(conn, id_selecionado, nome, setor, gestor_direto, diretor_gestor, diretoria)
+                            if st.button("Atualizar"):
+                                atualizar_pessoa(conn, id_selecionado, nome, setor, gestor_direto, diretor_gestor, diretoria)
 
         elif opcao == "Deletar":
             st.subheader("Deletar Funcionário")
@@ -86,16 +91,21 @@ def func_data_page():
                     st.warning(f"Nenhum funcionário encontrado com o nome: {nome_busca}")
                 else:
                     st.dataframe(df_busca)
-                    funcionarios_opcoes = df_busca.apply(lambda row: f"ID {row['id']}: {row['Nome']}", axis=1).tolist()
-                    id_selecionado = st.selectbox("Selecione o Funcionário para Deletar", options=df_busca['id'], format_func=lambda x: f"ID {x}: {df_busca[df_busca['id'] == x]['Nome'].values[0]}")
-                    
-                    if st.button("Deletar"):
-                        deletar_pessoa(conn, id_selecionado)
+                    if 'id' in df_busca.columns:  # Verifica se 'id' está presente
+                        id_selecionado = st.selectbox(
+                            "Selecione o Funcionário para Deletar", 
+                            options=df_busca['id'], 
+                            format_func=lambda x: f"ID {x}: {df_busca[df_busca['id'] == x]['Nome'].values[0]}" if not df_busca[df_busca['id'] == x].empty else "Funcionário Desconhecido"
+                        )
+                        
+                        if st.button("Deletar"):
+                            deletar_pessoa(conn, id_selecionado)
 
         conn.close()
 
     else:
         st.error("Não foi possível conectar ao banco de dados.")
+
 
 # Funções CRUD que serão usadas na página
 def adicionar_pessoa(conn, nome, setor, gestor_direto, diretor_gestor, diretoria):
