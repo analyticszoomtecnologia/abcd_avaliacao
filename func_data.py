@@ -132,6 +132,20 @@ def adicionar_pessoa(conn, nome, setor, gestor_direto, diretor_gestor, diretoria
         st.success(f"Funcionário {nome} adicionado com sucesso! ID: {novo_id}")
     except Exception as e:
         st.error(f"Erro ao adicionar funcionário: {e}")
+    
+    st.markdown(
+    """
+    <br><hr>
+    <div style='text-align: center;'>
+        Desenvolvido por 
+        <a href='https://www.linkedin.com/in/gabriel-cordeiro-033641144/' target='_blank' style='text-decoration: none; color: #0A66C2;'>
+            <img src='https://upload.wikimedia.org/wikipedia/commons/f/f8/LinkedIn_icon_circle.svg' alt='LinkedIn' width='20' style='vertical-align: middle; margin-right: 5px;' />
+            Gabriel Cordeiro
+        </a>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 
 def listar_pessoas(conn):
@@ -172,6 +186,20 @@ def atualizar_pessoa(conn, id, nome, setor, gestor_direto, diretor_gestor, diret
         st.success(f"Funcionário {nome} atualizado com sucesso!")
     except Exception as e:
         st.error(f"Erro ao atualizar funcionário: {e}")
+    
+    st.markdown(
+    """
+    <br><hr>
+    <div style='text-align: center;'>
+        Desenvolvido por 
+        <a href='https://www.linkedin.com/in/gabriel-cordeiro-033641144/' target='_blank' style='text-decoration: none; color: #0A66C2;'>
+            <img src='https://upload.wikimedia.org/wikipedia/commons/f/f8/LinkedIn_icon_circle.svg' alt='LinkedIn' width='20' style='vertical-align: middle; margin-right: 5px;' />
+            Gabriel Cordeiro
+        </a>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 def deletar_pessoa(conn, id):
     query = f"DELETE FROM datalake.silver_pny.func_zoom WHERE id = {id};"
@@ -184,7 +212,7 @@ def deletar_pessoa(conn, id):
     except Exception as e:
         st.error(f"Erro ao deletar funcionário: {e}")
 
-st.markdown(
+    st.markdown(
     """
     <br><hr>
     <div style='text-align: center;'>
