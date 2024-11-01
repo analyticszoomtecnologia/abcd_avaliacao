@@ -57,4 +57,14 @@ def login_page():
                 st.error("Usuário ou senha incorretos.")
     else:
         st.success("Você já está logado!")
-
+    
+    # Footer com link para LinkedIn
+    st.markdown(
+        """
+        <br><hr>
+        <div style='text-align: center;'>
+            Desenvolvido por <a href='https://www.linkedin.com/in/gabriel-cordeiro/' target='_blank'>Gabriel Cordeiro</a>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
