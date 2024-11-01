@@ -25,10 +25,17 @@ else:
 
     if pagina_selecionada == "Avaliação ABCD":
         user_id = st.session_state["id_emp"]
-        link_abcd = f"{link_abcd_base}?user_id={urllib.parse.quote(str(user_id))}"  # Passa apenas o user_id
+        link_abcd = f"{link_abcd_base}?user_id={urllib.parse.quote(str(user_id))}"
 
+        # Redireciona automaticamente para a aplicação externa
         st.write("Redirecionando para a página principal...")
-        st.markdown(f"[Clique aqui se não for redirecionado automaticamente.]({link_abcd})", unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <meta http-equiv="refresh" content="0; url={link_abcd}">
+            Se o redirecionamento automático não funcionar, clique [aqui]({link_abcd}).
+            """,
+            unsafe_allow_html=True
+        )
 
     elif pagina_selecionada == "Funcionários Data":
         func_data_page()
