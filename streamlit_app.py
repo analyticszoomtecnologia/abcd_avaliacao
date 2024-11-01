@@ -17,8 +17,8 @@ if 'logged_in' not in st.session_state:
 def gerar_token(user_id):
     token = jwt.encode(
         {
-            "user_id": user_id,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)  # Token expira em 15 minutos
+            "user_id": st.session_state["id_emp"],
+            "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)  # Token expira em 15 minutos
         },
         secret_key,
         algorithm="HS256"
@@ -50,9 +50,10 @@ else:
         link_abcd = f"{link_abcd_base}?token={token}"
 
         # Redirecionamento com link clicável
+        # Redirecionamento manual
         st.write("Redirecionando para a página principal...")
         st.markdown(f"[Clique aqui se não for redirecionado automaticamente.]({link_abcd})", unsafe_allow_html=True)
-        st.experimental_rerun()  # Realiza o redirecionamento
+
 
     elif pagina_selecionada == "Funcionários Data":
         func_data_page()
