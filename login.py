@@ -46,6 +46,17 @@ def gerar_token(user_id):
     )
     return token
 
+def salvar_token_no_banco(user_id, token):
+    connection = conectar_banco()
+    cursor = connection.cursor()
+    cursor.execute(f"""
+        INSERT INTO datalake.avaliacao_abcd.tokens (user_id, token, created_at)
+        VALUES ('{user_id}', '{token}', '{datetime.datetime.now()}')
+    """)
+    connection.commit()
+    cursor.close()
+    connection.close()
+
 def login_page():
     if not st.session_state.get("logged_in", False):
         hide_pages(["Avaliação ABCD", "Funcionários Data", "Lista de Avaliados"])
@@ -59,9 +70,11 @@ def login_page():
         if login_button:
             id_emp = verificar_login(username, password)
             if id_emp:
+                token = gerar_token(id_emp)
+                salvar_token_no_banco(id_emp, token)  # Salva o token no banco de dados
                 st.session_state["logged_in"] = True
                 st.session_state["id_emp"] = id_emp
-                st.session_state["token"] = gerar_token(id_emp)  # Gera o token e armazena no session state
+                st.session_state["token"] = token  # Armazena o token no session state para uso interno
                 hide_pages([])
                 st.success("Login bem-sucedido! Você será redirecionado.")
                 sleep(0.5)
