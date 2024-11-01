@@ -15,10 +15,11 @@ if 'logged_in' not in st.session_state:
 
 # Gera um token JWT com o ID do usuário logado
 def gerar_token(user_id):
+    # Gera o token JWT com expiração e informações do usuário
     token = jwt.encode(
         {
-            "user_id": st.session_state["id_emp"],
-            "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)  # Token expira em 15 minutos
+            "user_id": user_id,
+            "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
         },
         secret_key,
         algorithm="HS256"
