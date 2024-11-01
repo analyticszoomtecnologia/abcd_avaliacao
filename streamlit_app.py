@@ -5,7 +5,7 @@ from alter_nota import func_data_nota
 from st_pages import hide_pages
 import urllib.parse
 
-# URL da aplicação externa onde o `abcd.py` está hospedado
+# URL da aplicação externa onde o abcd.py está hospedado
 link_abcd_base = "https://aplicacao.streamlit.app"  # Substitua pelo URL real
 
 if 'logged_in' not in st.session_state:
