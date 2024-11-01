@@ -26,7 +26,7 @@ def gerar_token(user_id):
     return token
 
 # URL da aplicação externa onde o `abcd.py` está hospedado
-link_abcd_base = "https://aplicacao.streamlit.app/"  # Substitua pelo URL real
+link_abcd_base = "https://aplicacao.streamlit.app"  # Substitua pelo URL real
 
 # Se o usuário não estiver logado, mostra a página de login
 if not st.session_state['logged_in']:
