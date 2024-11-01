@@ -27,15 +27,16 @@ else:
         user_id = st.session_state["id_emp"]
         link_abcd = f"{link_abcd_base}?user_id={urllib.parse.quote(str(user_id))}"
 
-        # Redireciona automaticamente para a aplicação externa
-        st.write("Redirecionando para a página principal...")
-        st.markdown(
-            f"""
-            <meta http-equiv="refresh" content="0; url={link_abcd}">
-            Se o redirecionamento automático não funcionar, clique [aqui]({link_abcd}).
-            """,
-            unsafe_allow_html=True
-        )
+        # Verifica se já redirecionou para evitar loop de redirecionamento
+        if "redirected" not in st.session_state:
+            st.session_state["redirected"] = True
+            # Redirecionamento automático usando JavaScript
+            st.write(f"""
+                <script>
+                    window.location.href = "{link_abcd}";
+                </script>
+                Se o redirecionamento automático não funcionar, clique <a href="{link_abcd}">aqui</a>.
+            """, unsafe_allow_html=True)
 
     elif pagina_selecionada == "Funcionários Data":
         func_data_page()
