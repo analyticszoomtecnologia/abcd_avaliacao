@@ -5,7 +5,7 @@ from alter_nota import func_data_nota
 from st_pages import hide_pages
 import urllib.parse
 
-# URL da aplicação externa onde o `abcd.py` está hospedado
+# URL da aplicação externa onde o abcd.py está hospedado
 link_abcd_base = "https://aplicacao.streamlit.app"  # Substitua pelo URL real
 
 if 'logged_in' not in st.session_state:
@@ -24,8 +24,8 @@ else:
     )
 
     if pagina_selecionada == "Avaliação ABCD":
-        token = st.session_state["token"]
-        link_abcd = f"{link_abcd_base}?token={urllib.parse.quote(token)}"  # Codifica o token na URL
+        user_id = st.session_state["id_emp"]
+        link_abcd = f"{link_abcd_base}?user_id={urllib.parse.quote(str(user_id))}"  # Passa apenas o user_id
 
         st.write("Redirecionando para a página principal...")
         st.markdown(f"[Clique aqui se não for redirecionado automaticamente.]({link_abcd})", unsafe_allow_html=True)
