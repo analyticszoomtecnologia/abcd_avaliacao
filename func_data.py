@@ -4,13 +4,11 @@ from databricks import sql
 from dotenv import load_dotenv
 import os
 
-# Carrega variáveis de ambiente
 load_dotenv()
 DB_SERVER_HOSTNAME = os.getenv("DB_SERVER_HOSTNAME")
 DB_HTTP_PATH = os.getenv("DB_HTTP_PATH")
 DB_ACCESS_TOKEN = os.getenv("DB_ACCESS_TOKEN")
 
-# Função para conectar ao banco de dados
 def conectar_banco():
     try:
         conn = sql.connect(
@@ -23,14 +21,14 @@ def conectar_banco():
         st.error(f"Erro ao conectar ao banco de dados: {e}")
         return None
 
-# Função que encapsula toda a lógica da página
+
 def func_data_page():
     if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
         st.error("Você precisa fazer login para acessar essa página.")
         return
     st.title("Gerenciamento de Colaboradores")
 
-    # Opções de CRUD
+
     opcao = st.selectbox("Escolha a operação", ["Adicionar", "Listar", "Atualizar", "Deletar"])
 
     conn = conectar_banco()
@@ -63,7 +61,7 @@ def func_data_page():
                     st.warning(f"Nenhum funcionário encontrado com o nome: {nome_busca}")
                 else:
                     st.dataframe(df_busca)
-                    if 'id' in df_busca.columns:  # Verifica se 'id' está presente
+                    if 'id' in df_busca.columns:  
                         id_selecionado = st.selectbox(
                             "Selecione o Funcionário para Atualizar", 
                             options=df_busca['id'], 
@@ -91,7 +89,7 @@ def func_data_page():
                     st.warning(f"Nenhum funcionário encontrado com o nome: {nome_busca}")
                 else:
                     st.dataframe(df_busca)
-                    if 'id' in df_busca.columns:  # Verifica se 'id' está presente
+                    if 'id' in df_busca.columns:  
                         id_selecionado = st.selectbox(
                             "Selecione o Funcionário para Deletar", 
                             options=df_busca['id'], 
@@ -120,20 +118,17 @@ def func_data_page():
     )
 
 
-# Funções CRUD que serão usadas na página
 def adicionar_pessoa(conn, nome, setor, gestor_direto, diretor_gestor, diretoria):
-    # Gera um novo ID baseado no maior valor de ID existente (se o banco não estiver gerando automaticamente)
     query_id = "SELECT MAX(id) FROM datalake.silver_pny.func_zoom"
     cursor = conn.cursor()
     cursor.execute(query_id)
     max_id = cursor.fetchone()[0]
     
     if max_id is None:
-        novo_id = 1  # Se não houver registros, inicia o ID em 1
+        novo_id = 1  
     else:
-        novo_id = max_id + 1  # Incrementa o ID para o próximo valor
+        novo_id = max_id + 1 
     
-    # Insere o novo funcionário com o ID gerado
     query = f"""
     INSERT INTO datalake.silver_pny.func_zoom (id, Nome, Setor, Gestor_Direto, Diretor_Gestor, Diretoria)
     VALUES ({novo_id}, '{nome}', '{setor}', '{gestor_direto}', '{diretor_gestor}', '{diretoria}');

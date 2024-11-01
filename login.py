@@ -71,10 +71,10 @@ def login_page():
             id_emp = verificar_login(username, password)
             if id_emp:
                 token = gerar_token(id_emp)
-                salvar_token_no_banco(id_emp, token)  # Salva o token no banco de dados
+                salvar_token_no_banco(id_emp, token)
                 st.session_state["logged_in"] = True
                 st.session_state["id_emp"] = id_emp
-                st.session_state["token"] = token  # Armazena o token no session state para uso interno
+                st.session_state["token"] = token
                 hide_pages([])
                 st.success("Login bem-sucedido! Você será redirecionado.")
                 sleep(0.5)

@@ -4,13 +4,12 @@ from databricks import sql
 from dotenv import load_dotenv
 import os
 
-# Carrega variáveis de ambiente
 load_dotenv()
 DB_SERVER_HOSTNAME = os.getenv("DB_SERVER_HOSTNAME")
 DB_HTTP_PATH = os.getenv("DB_HTTP_PATH")
 DB_ACCESS_TOKEN = os.getenv("DB_ACCESS_TOKEN")
 
-# Função para conectar ao banco de dados
+
 def conectar_banco():
     try:
         conn = sql.connect(
@@ -34,7 +33,6 @@ def calcular_quarter(data):
     else:
         return "Q4"
 
-# Função para buscar os subordinados do gestor ou diretor logado
 def buscar_funcionarios_subordinados():
     id_gestor = st.session_state.get('id_emp', None)
 
@@ -42,7 +40,6 @@ def buscar_funcionarios_subordinados():
         connection = conectar_banco()
         cursor = connection.cursor()
 
-        # Busca o nome do gestor com base no id_emp logado
         cursor.execute(f"""
             SELECT Nome
             FROM datalake.silver_pny.func_zoom
@@ -53,7 +50,6 @@ def buscar_funcionarios_subordinados():
         if resultado:
             nome_gestor = resultado['Nome']
 
-            # Busca os funcionários subordinados diretos
             cursor.execute(f"""
                 SELECT id, Nome
                 FROM datalake.silver_pny.func_zoom
@@ -64,21 +60,17 @@ def buscar_funcionarios_subordinados():
             cursor.close()
             connection.close()
 
-            # Retorna os funcionários como um dicionário
             return {row['id']: row['Nome'] for row in funcionarios}
 
     return {}
 
-# Função para listar subordinados avaliados
 def listar_avaliados_subordinados(conn, quarter=None):
-    # Verifica se o gestor logado tem subordinados
     subordinados = buscar_funcionarios_subordinados()
 
     if not subordinados:
         st.write("Nenhum subordinado encontrado.")
-        return pd.DataFrame()  # Retorna um DataFrame vazio
+        return pd.DataFrame() 
 
-    # Gerar uma lista de IDs dos subordinados
     ids_subordinados = tuple(subordinados.keys())
 
     query = f"""
@@ -94,25 +86,21 @@ def listar_avaliados_subordinados(conn, quarter=None):
     colunas = [desc[0] for desc in cursor.description]
     df = pd.DataFrame(resultados, columns=colunas)
 
-    # Calculando o Quarter com base na data de resposta
     df['data_resposta_quarter'] = pd.to_datetime(df['data_resposta_quarter'])
     df['quarter'] = df['data_resposta_quarter'].apply(calcular_quarter)
 
-    # Filtrando por Quarter se for especificado
     if quarter and quarter != "Todos":
         df = df[df['quarter'] == quarter]
 
     cursor.close()
     return df
 
-# Função que encapsula toda a lógica da página
 def func_data_nota():
     if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
         st.error("Você precisa fazer login para acessar essa página.")
         return
     st.title("Avaliações")
 
-    # Opções de CRUD
     opcao = st.selectbox("Escolha a operação", ["Listar", "Deletar"])
 
     conn = conectar_banco()
@@ -121,10 +109,8 @@ def func_data_nota():
         if opcao == "Listar":
             st.subheader("Lista de Avaliados")
 
-            # Adicionando a seleção de Quarter
             quarter_selecionado = st.selectbox("Selecione o Quarter", ["Todos", "Q1", "Q2", "Q3", "Q4"])
 
-            # Filtrando os avaliados pelo Quarter
             if quarter_selecionado == "Todos":
                 df = listar_avaliados_subordinados(conn)
             else:
@@ -177,7 +163,6 @@ def func_data_nota():
         unsafe_allow_html=True
     )
 
-# Funções CRUD que serão usadas na página
 
 def buscar_por_nome(conn, nome, subordinados):
     ids_subordinados = tuple(subordinados.keys())
