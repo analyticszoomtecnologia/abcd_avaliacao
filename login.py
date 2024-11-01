@@ -5,7 +5,6 @@ from databricks import sql
 from dotenv import load_dotenv
 import os
 from time import sleep
-import urllib.parse
 from st_pages import hide_pages
 
 load_dotenv()
@@ -15,9 +14,6 @@ DB_ACCESS_TOKEN = os.getenv("DB_ACCESS_TOKEN")
 
 # Chave secreta para gerar o token JWT
 secret_key = "data"
-
-# URL da aplicação externa onde o abcd.py está hospedado
-link_abcd_base = "https://aplicacao.streamlit.app"
 
 def conectar_banco():
     return sql.connect(
@@ -79,22 +75,10 @@ def login_page():
                 st.session_state["logged_in"] = True
                 st.session_state["id_emp"] = id_emp
                 st.session_state["token"] = token  # Armazena o token no session state para uso interno
-                
-                # URL de redirecionamento
-                link_abcd = f"{link_abcd_base}?user_id={urllib.parse.quote(str(id_emp))}"
-                
-                # Redirecionamento automático após o login
-                st.write("Redirecionando para a página principal...")
-                st.markdown(
-                    f"""
-                    <script>
-                        window.location.href = "{link_abcd}";
-                    </script>
-                    Se o redirecionamento automático não funcionar, <a href="{link_abcd}">clique aqui</a>.
-                    """,
-                    unsafe_allow_html=True
-                )
-
+                hide_pages([])
+                st.success("Login bem-sucedido! Você será redirecionado.")
+                sleep(0.5)
+                st.experimental_rerun()
             else:
                 st.error("Usuário ou senha incorretos.")
     else:
