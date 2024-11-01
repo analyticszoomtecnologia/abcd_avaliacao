@@ -25,18 +25,10 @@ else:
 
     if pagina_selecionada == "Avaliação ABCD":
         user_id = st.session_state["id_emp"]
-        link_abcd = f"{link_abcd_base}?user_id={urllib.parse.quote(str(user_id))}"
+        link_abcd = f"{link_abcd_base}?user_id={urllib.parse.quote(str(user_id))}"  # Passa apenas o user_id
 
-        # Verifica se já redirecionou para evitar loop de redirecionamento
-        if "redirected" not in st.session_state:
-            st.session_state["redirected"] = True
-            # Redirecionamento automático usando JavaScript
-            st.write(f"""
-                <script>
-                    window.location.href = "{link_abcd}";
-                </script>
-                Se o redirecionamento automático não funcionar, clique <a href="{link_abcd}">aqui</a>.
-            """, unsafe_allow_html=True)
+        st.write("Redirecionando para a página principal...")
+        st.markdown(f"[Clique aqui se não for redirecionado automaticamente.]({link_abcd})", unsafe_allow_html=True)
 
     elif pagina_selecionada == "Funcionários Data":
         func_data_page()
