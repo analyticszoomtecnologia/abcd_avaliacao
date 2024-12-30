@@ -39,7 +39,7 @@ def gerar_token(user_id):
     token = jwt.encode(
         {
             "user_id": user_id,
-            "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
+            "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
         },
         secret_key,
         algorithm="HS256"
