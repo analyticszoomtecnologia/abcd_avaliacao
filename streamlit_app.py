@@ -34,7 +34,7 @@ else:
     elif pagina_selecionada == "Lista de Avaliados":
         func_data_nota()
 
-st.markdown(
+"""st.markdown(
         """
         <br><hr>
         <div style='text-align: center;'>
