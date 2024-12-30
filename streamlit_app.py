@@ -11,7 +11,7 @@ if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
 
 if not st.session_state['logged_in']:
-    hide_pages(["Avaliação ABCD", "Funcionários Data", "Lista de Avaliados"])
+    hide_pages(["Avaliação ABCD", "Gerenciar Funcionários", "Lista de Avaliados"])
     login_page()
 else:
     hide_pages([])
@@ -19,7 +19,7 @@ else:
     st.sidebar.title("Navegação")
     pagina_selecionada = st.sidebar.selectbox(
         "Escolha a página",
-        ["Avaliação ABCD", "Funcionários Data", "Lista de Avaliados"]
+        ["Avaliação ABCD", "Gerenciar Funcionários", "Lista de Avaliados"]
     )
 
     if pagina_selecionada == "Avaliação ABCD":
@@ -29,7 +29,7 @@ else:
         #st.write("Redirecionando para a página principal...")
         st.markdown(f"[Clique aqui para Realizar Avaliação.]({link_abcd})", unsafe_allow_html=True)
 
-    elif pagina_selecionada == "Funcionários Data":
+    elif pagina_selecionada == "Gerenciar Funcionários":
         func_data_page()
     elif pagina_selecionada == "Lista de Avaliados":
         func_data_nota()
